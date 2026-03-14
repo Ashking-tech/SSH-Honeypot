@@ -7,12 +7,9 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"net/http"
 	"os"
 
-	"github.com/shirou/gopsutil/v4/load"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/tools/go/analysis/passes/printf"
 
 	"crypto/x509"
 )
@@ -26,6 +23,10 @@ func loadHostKey(keyFile string) (ssh.Signer,error){
 			
 		}
 		//generate key
+		keyBytes,err = generateHostKey(keyFile)
+		if err != nil {
+			return nil, err
+		}
 	}
 	
 	//if pvtkey exists then parse it 
@@ -41,9 +42,8 @@ func loadHostKey(keyFile string) (ssh.Signer,error){
 func generateHostKey(keyFile string) ([]byte,error){
 	_,privateKey,err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
-		return nil,fmt.Errorf("something went wrong %w",err)
-	}
-	
+    return nil, fmt.Errorf("failed to generate key: %w", err)
+}
 	
 	derBytes,err:= x509.MarshalPKCS8PrivateKey(privateKey) 
 
@@ -53,7 +53,7 @@ func generateHostKey(keyFile string) ([]byte,error){
 
 
 	block := &pem.Block{
-		Type: "OPENSSH PRIVATE KEY",
+		Type: "PRIVATE KEY",
 		 Bytes: derBytes, 
 	}
 
@@ -73,20 +73,22 @@ if pemBytes == nil {
 func main(){
 	//load or generate host key
 	signer,err := loadHostKey("host_key")
+    _ = signer 
 	if err != nil {
 		log.Fatal(err)
 	}
 	
 	
+	
 	//configure ssh server
 	//listen on tcp port
-	listener,err := net.Listen("tcp",":8080")
+	listener,err := net.Listen("tcp",":2222")
 	if err != nil {
 		log.Fatal(err)
 	}
 	
 	defer listener.Close()
-	log.Println("server started on port :8080")
+	log.Println("server started on port :2222")
 	
 	for {
 		conn,err := listener.Accept()
@@ -98,9 +100,15 @@ func main(){
 	}
 	//accept connection and handle ssh handshake
 
-
+	
 	//listening on port 2222
 	
 	
 	
+}
+
+
+func handleConnection (conn net.Conn){
+    defer conn.Close()
+    log.Printf("new connection from: %s", conn.RemoteAddr())
 }
