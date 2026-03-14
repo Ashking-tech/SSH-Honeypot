@@ -6,11 +6,14 @@ import (
 	"encoding/pem"
 	"fmt"
 	"log"
-	"os"
+	"net"
 	"net/http"
+	"os"
 
+	"github.com/shirou/gopsutil/v4/load"
 	"golang.org/x/crypto/ssh"
-	 
+	"golang.org/x/tools/go/analysis/passes/printf"
+
 	"crypto/x509"
 )
 
@@ -69,17 +72,34 @@ if pemBytes == nil {
 
 func main(){
 	//load or generate host key
+	signer,err := loadHostKey("host_key")
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	
 	//configure ssh server
 	//listen on tcp port
+	listener,err := net.Listen("tcp",":8080")
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	defer listener.Close()
+	log.Println("server started on port :8080")
+	
+	for {
+		conn,err := listener.Accept()
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		go handleConnection(conn)
+	}
 	//accept connection and handle ssh handshake
 
 
 	//listening on port 2222
-	http.HandleFunc("/",func(w http.ResponseWriter, r *http.Request){
-
-	})
-	
-	log.Fatal(http.ListenAndServe(":2222",nil))
 	
 	
 	
