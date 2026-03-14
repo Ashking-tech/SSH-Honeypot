@@ -6,10 +6,12 @@ import (
 	"encoding/pem"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
+	"net/http"
 
 	"golang.org/x/crypto/ssh"
+	 
+	"crypto/x509"
 )
 
 func loadHostKey(keyFile string) (ssh.Signer,error){
@@ -23,7 +25,7 @@ func loadHostKey(keyFile string) (ssh.Signer,error){
 		//generate key
 	}
 	
-	 
+	//if pvtkey exists then parse it 
 		signer,err := ssh.ParsePrivateKey(keyBytes)
 		if err != nil {
 			return nil,fmt.Errorf("failed to parse key : %w",err)
@@ -32,7 +34,7 @@ func loadHostKey(keyFile string) (ssh.Signer,error){
 		return signer,nil
 }
 
-
+//if it pvt key doesnt exits then generate one
 func generateHostKey(keyFile string) ([]byte,error){
 	_,privateKey,err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
@@ -54,16 +56,15 @@ func generateHostKey(keyFile string) ([]byte,error){
 
 	pemBytes := pem.EncodeToMemory(block) 
 	 
-
-	if err := pem.Encode(os.Stdout, block); err != nil {
-		log.Fatal(err)
-	}
+if pemBytes == nil {
+	return nil, fmt.Errorf("failed to encode key to PEM")
+}
 	
 	if err != nil {
 		return nil,fmt.Errorf("something went wrong %w",err)
 	}
 
-	return nil,pemBytes
+	return pemBytes,nil
 }
 
 func main(){
@@ -79,4 +80,7 @@ func main(){
 	})
 	
 	log.Fatal(http.ListenAndServe(":2222",nil))
+	
+	
+	
 }
