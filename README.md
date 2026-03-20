@@ -1,4 +1,4 @@
-# 🍯 SSH Honeypot
+# SSH Honeypot
 
 A lightweight SSH honeypot written in Go that captures attacker credentials and commands. It presents a fake Ubuntu shell to anyone who connects, logs everything they do, and never gives real access to anything.
 
@@ -10,6 +10,8 @@ A lightweight SSH honeypot written in Go that captures attacker credentials and 
 - Logs every command the attacker types
 - Saves structured JSON logs for analysis
 - Runs in Docker for easy deployment
+
+![SSH Honeypot Demo](screenshots/screenshot.png)
 
 ## Project Structure
 

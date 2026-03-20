@@ -39,3 +39,10 @@
 2026/03/21 00:35:36 command received: ls
 2026/03/21 00:35:36 command received: lsls
 2026/03/21 00:51:05 new connection from: [::1]:43798
+2026/03/21 01:15:33 server started on port :2222
+2026/03/21 01:15:38 server handshake failed : read tcp [::1]:2222->[::1]:46984: read: connection reset by peer
+2026/03/21 01:15:58 server handshake failed : read tcp [::1]:2222->[::1]:34866: read: connection reset by peer
+2026/03/21 01:16:16 login attempt - ip: [::1]:36206 user: root password pass123
+2026/03/21 01:16:31 command received: ls
+2026/03/21 01:16:33 command received: pwd
+2026/03/21 01:17:27 command received: whoami
