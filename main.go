@@ -73,7 +73,8 @@ if pemBytes == nil {
 func main(){
 	//load or generate host key
 	signer,err := loadHostKey("host_key")
-    _ = signer 
+	config := configureSSHServer(signer)
+    // _ = signer 
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -96,7 +97,7 @@ func main(){
 			log.Println(err)
 			continue
 		}
-		go handleConnection(conn)
+		go handleConnection(conn,config)
 	}
 	//accept connection and handle ssh handshake
 
@@ -108,7 +109,30 @@ func main(){
 }
 
 
-func handleConnection (conn net.Conn){
-    defer conn.Close()
+func handleConnection (conn net.Conn,config *ssh.ServerConfig){
+	sshConn, chans, reqs, err := ssh.NewServerConn(conn,config)
+	if err != nil {
+		log.Printf("server handshake failed : %s",err)
+		return
+	}
+    defer sshConn.Close()
+    go ssh.DiscardRequests(reqs)
+    _ = chans
+    
     log.Printf("new connection from: %s", conn.RemoteAddr())
+}
+
+func configureSSHServer(signer ssh.Signer) *ssh.ServerConfig {
+	config := &ssh.ServerConfig{}
+	config.AddHostKey(signer)
+	config.PasswordCallback = func(conn ssh.ConnMetadata,password []byte)(*ssh.Permissions,error){
+		log.Printf("login attempt - ip: %s user: %s password %s",
+			conn.RemoteAddr(),
+			conn.User(),
+			string(password),
+		)
+		return nil,nil
+	}
+	
+	return config
 }
