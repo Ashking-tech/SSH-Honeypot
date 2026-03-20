@@ -1,0 +1,22 @@
+# SSH Keys
+keys/
+
+# Logs
+*.log
+attacks.json
+honeypot.log
+
+# Go build output
+honeypot
+
+# Go workspace
+go.work
+go.work.sum
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
