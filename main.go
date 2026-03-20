@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"log"
@@ -10,8 +11,6 @@ import (
 	"os"
 
 	"golang.org/x/crypto/ssh"
-
-	"crypto/x509"
 )
 
 func loadHostKey(keyFile string) (ssh.Signer,error){
@@ -44,14 +43,11 @@ func generateHostKey(keyFile string) ([]byte,error){
 	if err != nil {
     return nil, fmt.Errorf("failed to generate key: %w", err)
 }
-	
 	derBytes,err:= x509.MarshalPKCS8PrivateKey(privateKey) 
 
 	if err != nil {
 		return nil,fmt.Errorf("something went wrong %w",err)
 	}
-
-
 	block := &pem.Block{
 		Type: "PRIVATE KEY",
 		 Bytes: derBytes, 
@@ -66,9 +62,11 @@ if pemBytes == nil {
 	if err != nil {
 		return nil,fmt.Errorf("something went wrong %w",err)
 	}
-
 	return pemBytes,nil
 }
+
+
+
 
 func main(){
 	//load or generate host key
@@ -77,17 +75,13 @@ func main(){
     // _ = signer 
 	if err != nil {
 		log.Fatal(err)
-	}
-	
-	
-	
+	}	
 	//configure ssh server
 	//listen on tcp port
 	listener,err := net.Listen("tcp",":2222")
 	if err != nil {
 		log.Fatal(err)
 	}
-	
 	defer listener.Close()
 	log.Println("server started on port :2222")
 	
@@ -100,13 +94,9 @@ func main(){
 		go handleConnection(conn,config)
 	}
 	//accept connection and handle ssh handshake
-
-	
 	//listening on port 2222
-	
-	
-	
 }
+
 
 
 func handleConnection (conn net.Conn,config *ssh.ServerConfig){
@@ -117,7 +107,19 @@ func handleConnection (conn net.Conn,config *ssh.ServerConfig){
 	}
     defer sshConn.Close()
     go ssh.DiscardRequests(reqs)
-    _ = chans
+    for newChannel := range chans {
+    	if newChannel.ChannelType() != "session" {
+    	newChannel.Reject(ssh.UnknownChannelType,"unknown channel type")
+    	continue
+     }
+     
+     channel,requests,err := newChannel.Accept()
+     if err != nil {
+      log.Printf("could not accept channel : %s ",err)
+      return 
+     }
+     go handleSessions(channel,requests)
+    }
     
     log.Printf("new connection from: %s", conn.RemoteAddr())
 }
@@ -135,4 +137,35 @@ func configureSSHServer(signer ssh.Signer) *ssh.ServerConfig {
 	}
 	
 	return config
+}
+
+func handleSessions(channel ssh.Channel,requests <-chan *ssh.Request){
+	defer channel.Close()
+	// go ssh.DiscardRequests(requests)
+	
+	go func(){
+    	for req := range requests {
+     	if req.Type == "shell" || req.Type == "pyt-req"{
+      		req.Reply(true,nil)
+      }else{
+      req.Reply(false,nil)
+      }
+     }
+    }()
+	
+	//send fake prompt
+	channel.Write([]byte("root@ubuntu:~#"))
+	
+	//read commands
+	
+	buf := make([]byte,1024)
+	for {
+		n,err := channel.Read(buf)
+		if err != nil {
+			return
+		}
+		command := string(buf[:n])
+		log.Printf("command recieved: %s ",command)
+		channel.Write([]byte("command not found\r\nroot@ubuntu:~# "))
+	}
 }
