@@ -5,18 +5,28 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/pem"
+	
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net"
 	"os"
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 )
 
 
-
+type LoginAttempt struct {
+	Time    string `json:"time"`
+	IP    string `json:"IP"`
+	User    string `json:"user"`
+	Password    string `json:"password"`
+}	
+	
+	
 
 func loadHostKey(keyFile string) (ssh.Signer, error) {
 	//step 1 try to read existing private key
@@ -80,6 +90,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	//for json logging
+	jsonLog,err := os.OpenFile("attacks.json",os.O_APPEND|os.O_CREATE|os.O_WRONLY,0644)
+	if err != nil {
+		log.Fatal(err)
+		
+	}
+	defer jsonLog.Close()
+	
+	
 	//logging and saving credentials
 	logFile, err := os.OpenFile("honeypot.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -88,7 +107,7 @@ func main() {
 	defer logFile.Close()
 	log.SetOutput(io.MultiWriter(os.Stdout, logFile))
 
-	config := configureSSHServer(signer)
+	config := configureSSHServer(signer,jsonLog)
 	// _ = signer
 	if err != nil {
 		log.Fatal(err)
@@ -139,7 +158,7 @@ func handleConnection(conn net.Conn, config *ssh.ServerConfig) {
 	log.Printf("new connection from: %s", conn.RemoteAddr())
 }
 
-func configureSSHServer(signer ssh.Signer) *ssh.ServerConfig {
+func configureSSHServer(signer ssh.Signer,jsonLog *os.File) *ssh.ServerConfig {
 	
 	config := &ssh.ServerConfig{}
 	
@@ -150,6 +169,18 @@ func configureSSHServer(signer ssh.Signer) *ssh.ServerConfig {
 			conn.User(),
 			string(password),
 		)
+		
+		entry := LoginAttempt{
+    			Time:     time.Now().UTC().Format(time.RFC3339),
+       			IP:       conn.RemoteAddr().String(),
+          		User:     conn.User(),
+            	Password: string(password),
+}
+
+jsonBytes, err := json.Marshal(entry)
+if err == nil {
+    jsonLog.Write(append(jsonBytes, '\n'))
+}
 		return nil, nil
 	}
 	config.BannerCallback = func(conn ssh.ConnMetadata) string {

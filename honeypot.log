@@ -19,3 +19,23 @@
 2026/03/20 22:44:21 command recieved: id
  
 2026/03/20 22:44:21 command recieved : id
+2026/03/21 00:25:08 listen tcp :2222: bind: address already in use
+2026/03/21 00:26:29 listen tcp :2222: bind: address already in use
+2026/03/21 00:26:55 server started on port :2222
+2026/03/21 00:27:06 login attempt - ip: [::1]:45274 user: root password hii
+2026/03/21 00:27:09 command received: ls
+2026/03/21 00:27:13 command received: whats up
+2026/03/21 00:27:15 command received: pwd
+2026/03/21 00:27:47 new connection from: [::1]:45274
+2026/03/21 00:34:56 server started on port :2222
+2026/03/21 00:35:05 login attempt - ip: [::1]:43798 user: root password hello
+2026/03/21 00:35:11 command received: whats up
+2026/03/21 00:35:13 command received: ls
+2026/03/21 00:35:16 command received: pwd
+2026/03/21 00:35:18 command received: lol
+2026/03/21 00:35:34 command received: ls
+2026/03/21 00:35:35 command received: ls
+2026/03/21 00:35:35 command received: ls
+2026/03/21 00:35:36 command received: ls
+2026/03/21 00:35:36 command received: lsls
+2026/03/21 00:51:05 new connection from: [::1]:43798
