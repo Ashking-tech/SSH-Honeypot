@@ -1,0 +1,21 @@
+2026/03/20 22:43:25 server started on port :2222
+2026/03/20 22:43:34 server handshake failed : read tcp [::1]:2222->[::1]:59908: read: connection reset by peer
+2026/03/20 22:43:53 login attempt - ip: [::1]:39560 user: ashking password yoho
+2026/03/20 22:43:56 command recieved: a
+ 
+2026/03/20 22:43:56 command recieved : a
+2026/03/20 22:44:06 command recieved: ls
+ 
+2026/03/20 22:44:06 command recieved : ls
+2026/03/20 22:44:07 command recieved: cd
+ 
+2026/03/20 22:44:07 command recieved : cd
+2026/03/20 22:44:09 command recieved: pwd
+ 
+2026/03/20 22:44:09 command recieved : pwd
+2026/03/20 22:44:17 command recieved: whoami
+ 
+2026/03/20 22:44:17 command recieved : whoami
+2026/03/20 22:44:21 command recieved: id
+ 
+2026/03/20 22:44:21 command recieved : id

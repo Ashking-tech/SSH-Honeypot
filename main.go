@@ -6,9 +6,11 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
+	"strings"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -71,6 +73,15 @@ if pemBytes == nil {
 func main(){
 	//load or generate host key
 	signer,err := loadHostKey("host_key")
+	
+	//logging and saving credentials
+	logFile,err := os.OpenFile("honeypot.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY,0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer logFile.Close()
+	log.SetOutput(io.MultiWriter(os.Stdout,logFile))
+	
 	config := configureSSHServer(signer)
     // _ = signer 
 	if err != nil {
@@ -166,6 +177,22 @@ func handleSessions(channel ssh.Channel,requests <-chan *ssh.Request){
 		}
 		command := string(buf[:n])
 		log.Printf("command recieved: %s ",command)
-		channel.Write([]byte("command not found\r\nroot@ubuntu:~# "))
+		// channel.Write([]byte("command not found\r\nroot@ubuntu:~# "))
+		responses := map[string]string {
+		"whoami":   "root",
+    	"id":       "uid=0(root) gid=0(root) groups=0(root)",
+     	"uname -a": "Linux ubuntu 5.15.0-91-generic #101-Ubuntu SMP x86_64 GNU/Linux",
+      	"ls":       "bin  boot  dev  etc  home  lib  usr  var",
+       	"pwd":      "/root",
+		}
+		
+		command = strings.TrimSpace(string(buf[:n]))
+		log.Printf("command recieved : %s",command)
+		
+		if responses, ok := responses[command]; ok {
+			channel.Write([]byte(responses + "\r\nroot@ubuntu:~# "))
+		}else{
+			channel.Write([]byte("command not found\r\nroot@ubuntu:~#"))
+		}
 	}
 }

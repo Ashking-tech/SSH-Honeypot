@@ -1,0 +1,10 @@
+version: '3'
+services:
+  honeypot:
+    build: .
+    ports:
+      - "2222:2222"
+    volumes:
+      - ./logs:/app/logs
+      - ./keys:/app/keys
+    restart: always
