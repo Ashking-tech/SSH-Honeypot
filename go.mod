@@ -1,10 +1,7 @@
 module ssh-honeypot
 
-go 1.25.7
+go 1.25.0
 
-require (
-	github.com/golang-jwt/jwt v3.2.2+incompatible
-	golang.org/x/crypto v0.49.0
-)
+require golang.org/x/crypto v0.49.0
 
 require golang.org/x/sys v0.42.0 // indirect
