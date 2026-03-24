@@ -14,6 +14,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"http"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -24,7 +25,16 @@ type LoginAttempt struct {
 	IP    string `json:"IP"`
 	User    string `json:"user"`
 	Password    string `json:"password"`
+	Country string `json"country"`
+	City string `json:"city"`
+	ISP string `json:"isp"`
 }	
+
+type GeoLocation struct {
+	Country string `json:"country"`
+	City string `json:"city"`
+	ISP string `json:"isp"`
+}
 	
 	
 
@@ -170,12 +180,20 @@ func configureSSHServer(signer ssh.Signer,jsonLog *os.File) *ssh.ServerConfig {
 			string(password),
 		)
 		
+//geolocation thing
+		ip,_,_ := net.SplitHostPort(conn.RemoteAddr().String())
+		geo := getGeoLocation(ip)
+//geolocation thing
 		entry := LoginAttempt{
     			Time:     time.Now().UTC().Format(time.RFC3339),
-       			IP:       conn.RemoteAddr().String(),
+       			IP:       ip,
           		User:     conn.User(),
             	Password: string(password),
+             	Country: geo.Country,
+              	City: geo.City,
+               	ISP: geo.ISP,
 }
+
 
 jsonBytes, err := json.Marshal(entry)
 if err == nil {
@@ -250,4 +268,26 @@ func handleSessions(channel ssh.Channel, requests <-chan *ssh.Request) {
 			}
 		}
 	}
+}
+
+
+//getting some GeoLocation
+//
+ 
+func getGeoLocation(ip string)GeoLocation {
+	resp, err := http.Get("http://ip-api.com/json/" + ip)
+	if err != nil {
+		log.Printf("error making http request: %v",err)
+		return GeoLocation{}
+	}
+	
+	defer resp.Body.Close()
+	
+	var geo GeoLocation
+	err = json.NewDecoder(resp.Body).Decode(&geo)
+	if err != nil {
+		log.Printf("geolocation failed: %v",err)
+		return GeoLocation{}
+	}
+	return geo
 }
