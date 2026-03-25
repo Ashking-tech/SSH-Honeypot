@@ -1,144 +1,195 @@
-# SSH Honeypot
+# SSH Honeypot 2.0
 
-A lightweight SSH honeypot written in Go that captures attacker credentials and commands. It presents a fake Ubuntu shell to anyone who connects, logs everything they do, and never gives real access to anything.
+A production-grade SSH honeypot designed to capture, analyze, and visualize attacker behavior. Built with Go, this honeypot emulates a realistic Ubuntu shell environment while logging every interaction for security research and threat intelligence.
 
-## What It Does
+## Screenshots
 
-- Accepts SSH connections on port 2222 (or 22 in production)
-- Logs every login attempt with IP, username, and password
-- Presents a convincing fake bash shell after authentication
-- Logs every command the attacker types
-- Saves structured JSON logs for analysis
-- Runs in Docker for easy deployment
+![SSH Honeypot Dashboard](../screenshots/screenshot2.png)
 
-![SSH Honeypot Demo](screenshots/screenshot.png)
+![SSH Honeypot Dashboard](../screenshots/screenshot.png)
 
-## Project Structure
+## Features
 
-```
-ssh-honeypot/
-├── main.go              # All server logic
-├── keys/
-│   └── host_key         # Auto-generated ED25519 host key (gitignored)
-├── honeypot.log         # Plain text logs (gitignored)
-├── attacks.json         # Structured JSON credential logs (gitignored)
-├── Dockerfile
-└── docker-compose.yml
-```
+- **Realistic Shell Emulation** - Full pseudo-terminal with convincing Ubuntu 22.04 responses
+- **Credential Harvesting** - Captures usernames, passwords, and geo-location data from every connection
+- **Command Logging** - Records every command typed by attackers
+- **Geo-IP Enrichment** - Automatically enriches logs with country, city, ISP, and coordinates
+- **Rate Limiting** - Built-in protection against DoS attempts
+- **REST API** - Real-time attack data via built-in HTTP server
+- **Docker Ready** - One-command deployment anywhere
 
-## How It Works
-
-```
-Attacker connects on port 22/2222
-       ↓
-TCP connection accepted
-       ↓
-SSH handshake (ED25519 host key shown)
-       ↓
-Password auth → credentials logged to attacks.json
-       ↓
-Fake shell presented (root@ubuntu:~#)
-       ↓
-Commands logged, fake responses returned
-```
-
-## Getting Started
-
-### Run Locally
+## Quick Start
 
 ```bash
+# Run directly
 go run .
+
+# Or build and run with Docker
+docker build -t ssh-honeypot .
+docker run -p 2222:2222 -v $(pwd)/keys:/app/keys:z --restart always ssh-honeypot
 ```
 
-### Run with Docker
-
-```bash
-docker build -t honeypot .
-docker run -p 2222:2222 -v $(pwd)/keys:/app/keys:z --user=0:0 honeypot
-```
-
-### Connect and Test
+Connect with any SSH client:
 
 ```bash
 ssh root@localhost -p 2222
-# Enter any password when prompted
+# Enter any password - they're all "accepted"
 ```
 
-## Supported Commands
+## Architecture
 
-The fake shell responds to these commands:
-
-| Command | Response |
-|---------|----------|
-| `whoami` | `root` |
-| `id` | `uid=0(root) gid=0(root) groups=0(root)` |
-| `uname -a` | `Linux ubuntu 5.15.0-91-generic ...` |
-| `ls` | `bin  boot  dev  etc  home  lib  usr  var` |
-| `pwd` | `/root` |
-
-Everything else returns `command not found`.
-
-## Log Format
-
-### honeypot.log (plain text)
 ```
-2026/03/21 14:23:11 server started on port :2222
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   Attacker      │────▶│  SSH Server      │────▶│  Fake Shell     │
+│   (Port 2222)   │     │  (Go + crypto)   │     │  Emulation      │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+                               │                         │
+                               ▼                         ▼
+                        ┌──────────────┐         ┌──────────────┐
+                        │ attacks.json │         │ honeypot.log │
+                        │ (JSON Logs)  │         │ (Text Logs)  │
+                        └──────────────┘         └──────────────┘
+```
+
+## Emulated Commands
+
+| Category | Commands |
+|----------|----------|
+| **System Info** | `whoami`, `id`, `uname`, `hostname`, `uptime`, `date` |
+| **File Operations** | `ls`, `ls -la`, `ls -l`, `ls -1`, `pwd`, `cat`, `cd`, `echo` |
+| **Network** | `curl`, `wget` (simulated downloads) |
+| **Utilities** | `env`, `printenv`, `history`, `clear`, `exit` |
+
+The honeypot also responds to `cat` for fake files like `/etc/passwd`, `/etc/hosts`, `/proc/version`.
+
+## Log Output
+
+**Structured JSON** (`attacks.json`):
+```json
+{
+  "time": "2026-03-21T14:23:45Z",
+  "IP": "185.234.219.47",
+  "user": "root",
+  "password": "admin123",
+  "country": "China",
+  "city": "Beijing",
+  "ISP": "China Telecom",
+  "lat": 39.9042,
+  "lon": 116.4074
+}
+```
+
+**Plain Text** (`honeypot.log`):
+```
 2026/03/21 14:23:45 login attempt - ip: 185.234.x.x user: root password: admin123
 2026/03/21 14:23:47 command received: uname -a
 ```
 
-### attacks.json (structured)
-```json
-{"time":"2026-03-21T14:23:45Z","IP":"185.234.x.x","user":"root","password":"admin123"}
-```
+## Analysis Commands
 
-### Analyze credentials
 ```bash
-# Most common passwords tried
-cat attacks.json | jq '.password' | sort | uniq -c | sort -rn
+# Top passwords tried
+jq -r '.password' attacks.json | sort | uniq -c | sort -rn | head -10
 
-# Most common usernames
-cat attacks.json | jq '.user' | sort | uniq -c | sort -rn
+# Top usernames attempted
+jq -r '.user' attacks.json | sort | uniq -c | sort -rn | head -10
 
-# Unique IPs
-cat attacks.json | jq '.IP' | sort -u
+# Attack origins by country
+jq -r '.country' attacks.json | sort | uniq -c | sort -rn
+
+# Unique attacker IPs
+jq -r '.IP' attacks.json | sort -u | wc -l
 ```
 
 ## Production Deployment
 
-To expose the honeypot on port 22 and collect real attack data:
-
-1. Move your real SSH to a different port (e.g. 2222) on the server
-2. Map port 22 to the honeypot container:
+Deploy on a dedicated VM with port 22 exposed:
 
 ```bash
-docker run -d -p 22:2222 -v $(pwd)/keys:/app/keys:z --user=0:0 --restart always honeypot
+# Move real SSH to another port first
+sudo sed -i 's/#Port 22/Port 2222/' /etc/ssh/sshd_config
+sudo systemctl restart sshd
+
+# Run honeypot on port 22
+docker run -d -p 22:2222 -v $(pwd)/keys:/app/keys:z --user=0:0 --restart always ssh-honeypot
 ```
 
-> ⚠️ Only deploy on a dedicated VM. Never on a machine with sensitive data.
+> **Warning**: Only deploy on isolated infrastructure you own. Never on machines with sensitive data.
 
-## What You'll See
+## API Endpoints
 
-Once deployed on a public IP, bots will find port 22 within hours and start attempting logins. Common patterns include:
+The honeypot exposes a REST API for real-time attack data:
 
-- Credential stuffing with default passwords (`admin`, `123456`, `root`)
-- Username enumeration (`root`, `admin`, `ubuntu`, `pi`)
-- Post-auth commands like `uname -a`, `wget`, `curl` trying to download malware
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/attacks` | GET | Returns all captured login attempts as JSON |
+| `/api/stats` | GET | Returns aggregated statistics (top passwords, users, countries) |
+| `/` | GET | Web dashboard for visualizing attack data |
+
+Example stats response:
+```json
+{
+  "top_passwords": [
+    {"value": "admin123", "count": 45},
+    {"value": "root", "count": 32}
+  ],
+  "top_users": [
+    {"value": "root", "count": 150},
+    {"value": "admin", "count": 67}
+  ],
+  "top_countries": [
+    {"value": "China", "count": 89},
+    {"value": "Russia", "count": 45}
+  ]
+}
+```
+
+## Configuration
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| SSH Port | `2223` | Port the honeypot listens on |
+| API Port | `8080` | Port for the REST API and dashboard |
+| Host Key | `keys/host_key` | ED25519 private key path |
+| JSON Log | `attacks.json` | Structured log output |
+| Text Log | `honeypot.log` | Plain text log output |
 
 ## Tech Stack
 
-- **Go** — core server
-- **golang.org/x/crypto/ssh** — SSH protocol handling
-- **Docker** — containerized deployment
-- **ED25519** — host key algorithm
+- **Go** - High-performance SSH server implementation
+- **golang.org/x/crypto/ssh** - SSH protocol
+- **ED25519** - Secure host key generation
+- **ip-api.com** - Free geo-IP lookup
+- **Docker** - Containerized deployment
 
-## What I Learned
+## What You'll Learn
 
-- How the SSH protocol works under the hood (handshake, channels, requests)
-- Go concurrency with goroutines for handling simultaneous connections
-- Real attacker behavior and common credential patterns
-- Structured logging and log analysis
+Deploying this honeypot reveals:
+- How bots systematically attempt default credentials
+- Common attack patterns and payloads
+- Global distribution of SSH attackers
+- Why password authentication is dangerous
 
-## Legal
+## Troubleshooting
 
-This tool is for educational and defensive security research only. Only deploy on infrastructure you own. Never use against systems you don't have permission to monitor.
+| Issue | Solution |
+|-------|----------|
+| Port 2223 already in use | Change port in `main.go` or stop conflicting service |
+| Geo-IP not working | Check internet connectivity; ip-api.com may be rate-limited |
+| Keys folder permission denied | Run `chmod 700 keys/` or use Docker with `-v` flag |
+| API not responding | Ensure API server started; check port 8080 is open |
+
+## Contributing
+
+Contributions are welcome! Feel free to:
+- Report bugs or suggest features via GitHub Issues
+- Submit pull requests with improvements
+- Share interesting attack patterns you've observed
+
+## License
+
+This project is for educational and defensive security research only. See LICENSE file for details.
+
+## Legal Notice
+
+For educational and defensive security research only. Deploy only on infrastructure you own or have explicit permission to monitor.

@@ -46,52 +46,51 @@ type StatsResponse struct {
 }
 
 func statsHandler(w http.ResponseWriter,r *http.Request){
-	
+
 	file, err := os.Open("attacks.json")
 	if err != nil {
 		http.Error(w,"could not read the file",http.StatusInternalServerError)
 		return
 	}
 	defer file.Close()
-	
+
 	scanner := bufio.NewScanner(file)
-	
+
 	Passwords := make(map[string]int)
 	users := make(map[string]int)
 	countries := make(map[string]int)
-	
+
 	for scanner.Scan(){
 		var entry LoginAttempt
-		
+
 		err:= json.Unmarshal(scanner.Bytes(),&entry)
 		if err != nil{
-			http.Error(w,"had trouble reading the json",http.StatusInternalServerError)
-			return
+			continue // Skip invalid lines instead of returning error
 		}
 		Passwords[entry.Password]++
 		users[entry.User]++
 		countries[entry.Country]++
 		}
-		
+
 		var stats StatsResponse
-		
+
 		for k, v := range Passwords {
 			entry := StatEntry{Value: k, Count: v}
     		stats.TopPasswords = append(stats.TopPasswords, entry)
 		}
-		
-		
+
+
 		for k, v := range users {
 			entry := StatEntry{Value: k, Count: v}
     		stats.TopUsers = append(stats.TopUsers, entry)
 		}
-		
-		
+
+
 		for k, v := range countries {
 			entry := StatEntry{Value: k, Count: v}
     		stats.TopCountries = append(stats.TopCountries, entry)
 		}
-		
+
 		w.Header().Set("Content-Type","application/json")
 		json.NewEncoder(w).Encode(stats)
 }
