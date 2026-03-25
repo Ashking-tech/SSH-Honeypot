@@ -162,13 +162,6 @@ Example stats response:
 - **ip-api.com** - Free geo-IP lookup
 - **Docker** - Containerized deployment
 
-## What You'll Learn
-
-Deploying this honeypot reveals:
-- How bots systematically attempt default credentials
-- Common attack patterns and payloads
-- Global distribution of SSH attackers
-- Why password authentication is dangerous
 
 ## Troubleshooting
 
@@ -178,13 +171,6 @@ Deploying this honeypot reveals:
 | Geo-IP not working | Check internet connectivity; ip-api.com may be rate-limited |
 | Keys folder permission denied | Run `chmod 700 keys/` or use Docker with `-v` flag |
 | API not responding | Ensure API server started; check port 8080 is open |
-
-## Contributing
-
-Contributions are welcome! Feel free to:
-- Report bugs or suggest features via GitHub Issues
-- Submit pull requests with improvements
-- Share interesting attack patterns you've observed
 
 ## License
 
