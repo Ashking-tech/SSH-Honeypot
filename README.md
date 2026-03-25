@@ -4,9 +4,9 @@ A production-grade SSH honeypot designed to capture, analyze, and visualize atta
 
 ## Screenshots
 
-![SSH Honeypot Dashboard](../screenshots/screenshot2.png)
+![SSH Honeypot Dashboard](screenshots/screenshot2.png)
 
-![SSH Honeypot Dashboard](../screenshots/screenshot.png)
+![SSH Honeypot Dashboard](screenshots/screenshot.png)
 
 ## Features
 
