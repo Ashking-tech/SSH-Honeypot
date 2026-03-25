@@ -1,59 +1,13 @@
-2026/03/20 22:43:25 server started on port :2222
-2026/03/20 22:43:34 server handshake failed : read tcp [::1]:2222->[::1]:59908: read: connection reset by peer
-2026/03/20 22:43:53 login attempt - ip: [::1]:39560 user: ashking password yoho
-2026/03/20 22:43:56 command recieved: a
- 
-2026/03/20 22:43:56 command recieved : a
-2026/03/20 22:44:06 command recieved: ls
- 
-2026/03/20 22:44:06 command recieved : ls
-2026/03/20 22:44:07 command recieved: cd
- 
-2026/03/20 22:44:07 command recieved : cd
-2026/03/20 22:44:09 command recieved: pwd
- 
-2026/03/20 22:44:09 command recieved : pwd
-2026/03/20 22:44:17 command recieved: whoami
- 
-2026/03/20 22:44:17 command recieved : whoami
-2026/03/20 22:44:21 command recieved: id
- 
-2026/03/20 22:44:21 command recieved : id
-2026/03/21 00:25:08 listen tcp :2222: bind: address already in use
-2026/03/21 00:26:29 listen tcp :2222: bind: address already in use
-2026/03/21 00:26:55 server started on port :2222
-2026/03/21 00:27:06 login attempt - ip: [::1]:45274 user: root password hii
-2026/03/21 00:27:09 command received: ls
-2026/03/21 00:27:13 command received: whats up
-2026/03/21 00:27:15 command received: pwd
-2026/03/21 00:27:47 new connection from: [::1]:45274
-2026/03/21 00:34:56 server started on port :2222
-2026/03/21 00:35:05 login attempt - ip: [::1]:43798 user: root password hello
-2026/03/21 00:35:11 command received: whats up
-2026/03/21 00:35:13 command received: ls
-2026/03/21 00:35:16 command received: pwd
-2026/03/21 00:35:18 command received: lol
-2026/03/21 00:35:34 command received: ls
-2026/03/21 00:35:35 command received: ls
-2026/03/21 00:35:35 command received: ls
-2026/03/21 00:35:36 command received: ls
-2026/03/21 00:35:36 command received: lsls
-2026/03/21 00:51:05 new connection from: [::1]:43798
-2026/03/21 01:15:33 server started on port :2222
-2026/03/21 01:15:38 server handshake failed : read tcp [::1]:2222->[::1]:46984: read: connection reset by peer
-2026/03/21 01:15:58 server handshake failed : read tcp [::1]:2222->[::1]:34866: read: connection reset by peer
-2026/03/21 01:16:16 login attempt - ip: [::1]:36206 user: root password pass123
-2026/03/21 01:16:31 command received: ls
-2026/03/21 01:16:33 command received: pwd
-2026/03/21 01:17:27 command received: whoami
-2026/03/25 15:59:38 listen tcp :2222: bind: address already in use
-2026/03/25 16:01:04 listen tcp :2222: bind: address already in use
-2026/03/25 16:02:04 listen tcp :2222: bind: address already in use
-2026/03/25 16:02:35 server started on port :2222
-2026/03/25 16:23:44 server started on port :2222
-2026/03/25 19:41:51 server started on port :2222
-2026/03/25 19:44:05 server started on port :2222
-2026/03/25 19:46:07 server started on port :2222
-2026/03/25 19:51:32 server started on port :2222
-2026/03/25 19:54:23 server started on port :2222
-2026/03/25 20:00:10 server started on port :2222
+2026/03/26 00:10:44 server started on port :2222
+2026/03/26 00:11:26 login attempt - ip: [::1]:54296 user: root password testpassword
+2026/03/26 00:11:26 new connection from: [::1]:54296
+2026/03/26 00:13:11 login attempt - ip: [::1]:55110 user: root password testpassword
+2026/03/26 00:13:12 command received: ls
+2026/03/26 00:13:12 command received: whoami
+2026/03/26 00:13:12 command received: id
+2026/03/26 00:13:13 command received: exit
+2026/03/26 00:13:13 new connection from: [::1]:55110
+2026/03/26 00:14:56 server started on port :2222
+2026/03/26 00:18:29 login attempt - ip: [::1]:60556 user: root password niggers
+2026/03/26 00:18:32 command received: ls
+2026/03/26 00:18:42 command received: cd /home
