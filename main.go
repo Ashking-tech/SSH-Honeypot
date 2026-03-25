@@ -28,12 +28,16 @@ type LoginAttempt struct {
 	Country string `json:"country"`
 	City string `json:"city"`
 	ISP string `json:"isp"`
+	Lat     float64 `json:"lat"`
+    Lon     float64 `json:"lon"`
 }	
 
 type GeoLocation struct {
 	Country string `json:"country"`
 	City string `json:"city"`
 	ISP string `json:"isp"`
+	Lat     float64 `json:"lat"`
+    Lon     float64 `json:"lon"`
 }
 	
 
@@ -145,6 +149,7 @@ func main() {
 	//listening on port 2222
 }
 
+
 func handleConnection(conn net.Conn, config *ssh.ServerConfig) {
 	sshConn, chans, reqs, err := ssh.NewServerConn(conn, config)
 	if err != nil {
@@ -183,7 +188,7 @@ func configureSSHServer(signer ssh.Signer,jsonLog *os.File) *ssh.ServerConfig {
 		)
 		
 //geolocation thing
-		ip,_,_ := net.SplitHostPort(conn.RemoteAddr().String())
+ip, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
 		geo := getGeoLocation(ip)
 //geolocation thing
 		entry := LoginAttempt{
@@ -194,6 +199,8 @@ func configureSSHServer(signer ssh.Signer,jsonLog *os.File) *ssh.ServerConfig {
              	Country: geo.Country,
               	City: geo.City,
                	ISP: geo.ISP,
+                Lat:     geo.Lat,
+                Lon:     geo.Lon,
 }
 
 

@@ -103,8 +103,8 @@ func dashboardHandler(w http.ResponseWriter, r *http.Request) {
 
 func startApiServer(port string){
 	// sets up HTTP routes and listens on port 8090
-	http.HandleFunc("/api/attacks", attacksHandler)
-	http.HandleFunc("/", dashboardHandler)
+	http.HandleFunc("/api/attacks",attacksHandler)
+	http.HandleFunc("/",dashboardHandler)
     http.HandleFunc("/api/stats", statsHandler)
 	log.Printf("server starting on port %s\n",port)
 	err := http.ListenAndServe(":"+port,nil)
