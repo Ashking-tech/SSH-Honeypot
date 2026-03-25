@@ -9,15 +9,27 @@ import (
 	"os"
 )
 
-func attacksHandler(w http.ResponseWriter, r *http.Request){
-	data, err := os.ReadFile("attacks.json")
-	if err != nil {
-		http.Error(w,"could not read attacks file",http.StatusInternalServerError)
-		return
-	}
-	
-	w.Header().Set("Content-Type","application/json")
-	w.Write(data)
+func attacksHandler(w http.ResponseWriter, r *http.Request) {
+    file, err := os.Open("attacks.json")
+    if err != nil {
+        http.Error(w, "could not read attacks file", http.StatusInternalServerError)
+        return
+    }
+    defer file.Close()
+
+    var attacks []LoginAttempt
+    scanner := bufio.NewScanner(file)
+    for scanner.Scan() {
+        var entry LoginAttempt
+        err := json.Unmarshal(scanner.Bytes(), &entry)
+        if err != nil {
+            continue
+        }
+        attacks = append(attacks, entry)
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(attacks)
 }
 
 //struct for sending json response
