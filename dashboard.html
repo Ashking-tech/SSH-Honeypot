@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SSH Honeypot — Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:       #080c10;
+    --bg2:      #0d1117;
+    --bg3:      #111820;
+    --border:   #1a2a3a;
+    --accent:   #00e5ff;
+    --accent2:  #ff3c5c;
+    --accent3:  #39ff14;
+    --text:     #c8d8e8;
+    --muted:    #4a6070;
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-ui:   'Rajdhani', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,229,255,0.015) 2px,
+      rgba(0,229,255,0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: var(--font-ui);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    text-shadow: 0 0 20px rgba(0,229,255,0.4);
+  }
+
+  .logo span { color: var(--accent2); }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent3);
+    display: inline-block;
+    margin-right: 6px;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 6px var(--accent3); }
+    50% { opacity: 0.4; box-shadow: none; }
+  }
+
+  #clock { color: var(--accent); font-size: 13px; }
+
+  main {
+    padding: 24px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* Summary cards */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--accent);
+    padding: 20px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0,229,255,0.03) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .card-label {
+    font-family: var(--font-ui);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .card-value {
+    font-family: var(--font-ui);
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    text-shadow: 0 0 20px rgba(0,229,255,0.3);
+  }
+
+  .card:nth-child(2) { border-top-color: var(--accent2); }
+  .card:nth-child(2) .card-value { color: var(--accent2); text-shadow: 0 0 20px rgba(255,60,92,0.3); }
+  .card:nth-child(3) { border-top-color: var(--accent3); }
+  .card:nth-child(3) .card-value { color: var(--accent3); text-shadow: 0 0 20px rgba(57,255,20,0.3); }
+  .card:nth-child(4) { border-top-color: #ff9a00; }
+  .card:nth-child(4) .card-value { color: #ff9a00; font-size: 18px; padding-top: 8px; text-shadow: 0 0 20px rgba(255,154,0,0.3); }
+
+  /* Map + table row */
+  .row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg3);
+  }
+
+  .panel-title {
+    font-family: var(--font-ui);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    background: rgba(0,229,255,0.1);
+    border: 1px solid rgba(0,229,255,0.2);
+    color: var(--accent);
+  }
+
+  /* Map */
+  #map {
+    height: 340px;
+    background: #060a0e;
+  }
+
+  .leaflet-container { background: #060a0e !important; }
+  .leaflet-tile { filter: invert(1) hue-rotate(180deg) brightness(0.7) saturate(0.6); }
+
+  /* Attacks table */
+  .table-wrap { overflow-y: auto; max-height: 340px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+
+  thead th {
+    padding: 10px 14px;
+    text-align: left;
+    font-family: var(--font-ui);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--bg3);
+    position: sticky;
+    top: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(26,42,58,0.5);
+    transition: background 0.15s;
+  }
+
+  tbody tr:hover { background: rgba(0,229,255,0.04); }
+
+  tbody tr.new-row { animation: slideIn 0.4s ease; }
+
+  @keyframes slideIn {
+    from { background: rgba(0,229,255,0.12); }
+    to { background: transparent; }
+  }
+
+  td { padding: 9px 14px; color: var(--text); }
+  td.ip { color: var(--accent); }
+  td.user { color: var(--accent3); }
+  td.pass { color: var(--accent2); }
+  td.country { color: #ff9a00; }
+  td.time { color: var(--muted); font-size: 11px; }
+
+  /* Charts row */
+  .row-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .chart-wrap {
+    padding: 20px;
+    height: 260px;
+    position: relative;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .refresh-indicator {
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .spin {
+    display: inline-block;
+    animation: spin 1s linear infinite;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .spin.active { opacity: 1; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">SSH<span>TRAP</span> &mdash; Honeypot Monitor</div>
+  <div class="status-bar">
+    <span><span class="status-dot"></span>LIVE</span>
+    <span id="clock"></span>
+    <span class="refresh-indicator"><span class="spin" id="spin">↻</span> AUTO-REFRESH 5s</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- Summary cards -->
+  <div class="cards">
+    <div class="card">
+      <div class="card-label">Total Attempts</div>
+      <div class="card-value" id="total">0</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Unique IPs</div>
+      <div class="card-value" id="unique-ips">0</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Unique Users</div>
+      <div class="card-value" id="unique-users">0</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Top Password</div>
+      <div class="card-value" id="top-pass">—</div>
+    </div>
+  </div>
+
+  <!-- Map + Live feed -->
+  <div class="row-2">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Attack Origins</span>
+        <span class="badge" id="map-count">0 IPs</span>
+      </div>
+      <div id="map"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Live Feed</span>
+        <span class="badge" id="feed-count">0 events</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>IP</th>
+              <th>User</th>
+              <th>Password</th>
+              <th>Country</th>
+            </tr>
+          </thead>
+          <tbody id="feed-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="row-3">
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Top Passwords</span></div>
+      <div class="chart-wrap"><canvas id="chart-pass"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Top Usernames</span></div>
+      <div class="chart-wrap"><canvas id="chart-user"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Top Countries</span></div>
+      <div class="chart-wrap"><canvas id="chart-country"></canvas></div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // Clock
+  function updateClock() {
+    document.getElementById('clock').textContent = new Date().toUTCString().slice(0, 25) + ' UTC';
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Map setup
+  const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([20, 0], 2);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+  const markerIcon = L.divIcon({
+    className: '',
+    html: '<div style="width:8px;height:8px;border-radius:50%;background:#ff3c5c;box-shadow:0 0 8px #ff3c5c;border:1px solid rgba(255,60,92,0.5)"></div>',
+    iconSize: [8, 8],
+    iconAnchor: [4, 4]
+  });
+
+  let markers = {};
+
+  // Chart setup
+  const chartDefaults = {
+    type: 'bar',
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          ticks: { color: '#4a6070', font: { family: 'Share Tech Mono', size: 10 } },
+          grid: { color: 'rgba(26,42,58,0.8)' },
+          border: { color: 'rgba(26,42,58,0.8)' }
+        },
+        y: {
+          ticks: { color: '#c8d8e8', font: { family: 'Share Tech Mono', size: 11 } },
+          grid: { display: false },
+          border: { display: false }
+        }
+      }
+    }
+  };
+
+  function makeChart(id, color) {
+    return new Chart(document.getElementById(id), {
+      ...chartDefaults,
+      data: {
+        labels: [],
+        datasets: [{
+          data: [],
+          backgroundColor: color + '33',
+          borderColor: color,
+          borderWidth: 1,
+          borderRadius: 2,
+        }]
+      },
+      options: { ...chartDefaults.options }
+    });
+  }
+
+  const chartPass    = makeChart('chart-pass',    '#ff3c5c');
+  const chartUser    = makeChart('chart-user',    '#00e5ff');
+  const chartCountry = makeChart('chart-country', '#ff9a00');
+
+  function updateChart(chart, entries) {
+    const top = entries.sort((a, b) => b.count - a.count).slice(0, 8);
+    chart.data.labels = top.map(e => e.value || '(empty)');
+    chart.data.datasets[0].data = top.map(e => e.count);
+    chart.update('none');
+  }
+
+  // Feed
+  let knownEntries = [];
+
+  function formatTime(iso) {
+    return iso ? iso.slice(11, 19) : '—';
+  }
+
+  function updateFeed(attacks) {
+    const tbody = document.getElementById('feed-body');
+    const newEntries = attacks.slice(-50).reverse();
+
+    if (newEntries.length !== knownEntries.length) {
+      tbody.innerHTML = '';
+      newEntries.forEach((a, i) => {
+        const tr = document.createElement('tr');
+        if (i === 0 && knownEntries.length > 0) tr.classList.add('new-row');
+        tr.innerHTML = `
+          <td class="time">${formatTime(a.time)}</td>
+          <td class="ip">${a.IP || '—'}</td>
+          <td class="user">${a.user || '—'}</td>
+          <td class="pass">${a.password || '—'}</td>
+          <td class="country">${a.country || '—'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      knownEntries = newEntries;
+    }
+
+    document.getElementById('feed-count').textContent = attacks.length + ' events';
+  }
+
+  // Summary cards
+  function updateCards(attacks, stats) {
+    document.getElementById('total').textContent = attacks.length;
+
+    const ips = new Set(attacks.map(a => a.IP));
+    document.getElementById('unique-ips').textContent = ips.size;
+
+    const users = new Set(attacks.map(a => a.user));
+    document.getElementById('unique-users').textContent = users.size;
+
+    if (stats.top_passwords && stats.top_passwords.length > 0) {
+      const top = stats.top_passwords.sort((a, b) => b.count - a.count)[0];
+      document.getElementById('top-pass').textContent = top.value || '—';
+    }
+  }
+
+  // Map markers
+  function updateMap(attacks) {
+    const seen = new Set();
+    attacks.forEach(a => {
+      if (a.lat && a.lon && !seen.has(a.IP)) {
+        seen.add(a.IP);
+        if (!markers[a.IP]) {
+          const m = L.marker([a.lat, a.lon], { icon: markerIcon })
+            .bindPopup(`<b style="color:#ff3c5c">${a.IP}</b><br>${a.user} / ${a.password}<br>${a.country || ''} ${a.city || ''}`)
+            .addTo(map);
+          markers[a.IP] = m;
+        }
+      }
+    });
+    document.getElementById('map-count').textContent = Object.keys(markers).length + ' IPs';
+  }
+
+  // Main fetch loop
+  async function refresh() {
+    const spin = document.getElementById('spin');
+    spin.classList.add('active');
+    try {
+      const [attacksRes, statsRes] = await Promise.all([
+        fetch('/api/attacks'),
+        fetch('/api/stats')
+      ]);
+
+      const attacksText = await attacksRes.text();
+      const attacks = attacksText.trim().split('\n')
+        .filter(Boolean)
+        .map(line => { try { return JSON.parse(line); } catch { return null; } })
+        .filter(Boolean);
+
+      const stats = await statsRes.json();
+
+      updateFeed(attacks);
+      updateCards(attacks, stats);
+      updateMap(attacks);
+      updateChart(chartPass,    stats.top_passwords  || []);
+      updateChart(chartUser,    stats.top_users      || []);
+      updateChart(chartCountry, stats.top_countries  || []);
+
+    } catch (e) {
+      console.error('Refresh error:', e);
+    }
+    spin.classList.remove('active');
+  }
+
+  refresh();
+  setInterval(refresh, 5000);
+</script>
+</body>
+</html>

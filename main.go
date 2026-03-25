@@ -14,7 +14,7 @@ import (
 	"os"
 	"strings"
 	"time"
-	"http"
+	"net/http"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -25,7 +25,7 @@ type LoginAttempt struct {
 	IP    string `json:"IP"`
 	User    string `json:"user"`
 	Password    string `json:"password"`
-	Country string `json"country"`
+	Country string `json:"country"`
 	City string `json:"city"`
 	ISP string `json:"isp"`
 }	
@@ -35,7 +35,6 @@ type GeoLocation struct {
 	City string `json:"city"`
 	ISP string `json:"isp"`
 }
-	
 	
 
 func loadHostKey(keyFile string) (ssh.Signer, error) {
@@ -95,6 +94,9 @@ func generateHostKey(keyFile string) ([]byte, error) {
 }
 
 func main() {
+	
+	
+	go startApiServer("8080")	
 	//load or generate host key
 	signer, err := loadHostKey("keys/host_key")
 	if err != nil {
@@ -124,7 +126,7 @@ func main() {
 	}
 	//configure ssh server
 	//listen on tcp port
-	listener, err := net.Listen("tcp", ":2222")
+	listener, err := net.Listen("tcp", ":2223")
 	if err != nil {
 		log.Fatal(err)
 	}

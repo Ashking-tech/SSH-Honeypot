@@ -46,3 +46,8 @@
 2026/03/21 01:16:31 command received: ls
 2026/03/21 01:16:33 command received: pwd
 2026/03/21 01:17:27 command received: whoami
+2026/03/25 15:59:38 listen tcp :2222: bind: address already in use
+2026/03/25 16:01:04 listen tcp :2222: bind: address already in use
+2026/03/25 16:02:04 listen tcp :2222: bind: address already in use
+2026/03/25 16:02:35 server started on port :2222
+2026/03/25 16:23:44 server started on port :2222
